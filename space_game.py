@@ -48,7 +48,6 @@ def draw(canvas):
 
     rows, columns = canvas.getmaxyx()
     quantity_of_stars = random.randint(MIN_STARS, MAX_STARS)
-    coroutine_of_shot = fire(canvas, rows // 2, columns // 2)
 
     used_positions = set()
     spaceship_first_frame = get_frame('animation/rocket_frame_1.txt')
