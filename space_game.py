@@ -3,11 +3,17 @@ import curses
 import time
 import random
 
+from fire_animation import fire
+
+MAX_STARS = 60
+MIN_STARS = 15
+SIMBOLS_OF_STARS = ['+', '*', '.', ':']
+OFFSET_OF_ANIMATION = 10
 TIC_TIMEOUT = 0.1
 
 
 async def blink(canvas, row, column, symbol='*'):
-    for _ in range(random.randint(0, 20)):
+    for _ in range(random.randint(0, OFFSET_OF_ANIMATION)):
         await asyncio.sleep(0)
 
     while True:
@@ -31,23 +37,24 @@ async def blink(canvas, row, column, symbol='*'):
 def draw(canvas):
     canvas.border('|', '|')
     curses.curs_set(False)
-    coroutines = []
 
-    max_y, max_x = canvas.getmaxyx()
+    rows, columns = canvas.getmaxyx()
+    quantity_of_stars = random.randint(MIN_STARS, MAX_STARS)
+
+    coroutine_of_shot = fire(canvas, rows // 2, columns // 2)
+    coroutines = [coroutine_of_shot]
 
     used_positions = set()
 
-    while len(coroutines) < 100:
-        row = random.randint(1, max_y - 2)
-        column = random.randint(1, max_x - 2)
-        if (row, column) in used_positions:
-            continue
-        used_positions.add((row, column))
-
-        symbol = random.choice('+*.:')
-
-        coroutine = blink(canvas, row, column, symbol)
-        coroutines.append(coroutine)
+    for _ in range(quantity_of_stars):
+        for _ in range(100):
+            row = random.randint(1, rows - 2)
+            column = random.randint(1, columns - 2)
+            if (row, column) not in used_positions:
+                used_positions.add((row, column))
+                symbol = random.choice(SIMBOLS_OF_STARS)
+                coroutines.append(blink(canvas, row, column, symbol=symbol))
+                break
 
     while True:
         for coroutine in coroutines.copy():
@@ -58,6 +65,7 @@ def draw(canvas):
 
         canvas.refresh()
         time.sleep(TIC_TIMEOUT)
+
         if len(coroutines) == 0:
             break
 
