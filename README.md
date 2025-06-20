@@ -26,7 +26,7 @@ cd A_game_about_space
 ```bash
 python -m venv venv
 source venv/bin/activate  # Для Windows: venv\Scripts\activate
-pip install
+pip install -r requirements.txt
 ```
 
 ## 📁 Структура проекта
@@ -34,11 +34,15 @@ pip install
 ```bash
 .
 ├── space_game.py              # Точка входа
-├── fire_animation.py          # Анимация выстрелов
+├── README.md                  # README проекта
+├── requirements.txt           # Установленные зависимости
 ├── animation/
 │   ├── space_ship.py          # Движение корабля
 │   ├── rocket_frame_1.txt     # Первый кадр корабля
 │   └── rocket_frame_2.txt     # Второй кадр корабля
+    ├── fire_animation.py      # Анимация выстрелов
+│   ├── space_ship.py          # Движение корабля
+
 ```
 
 ## 🎮 Управление
