@@ -3,8 +3,8 @@ import curses
 import time
 import random
 
-from fire_animation import fire
-from animation.space_ship import animate_spaceship
+from animations.fire_animation import fire
+from animations.space_ship import animate_spaceship
 
 MAX_STARS = 60
 MIN_STARS = 15
@@ -49,13 +49,14 @@ def draw(canvas):
     rows, columns = canvas.getmaxyx()
     quantity_of_stars = random.randint(MIN_STARS, MAX_STARS)
 
+    coroutine_of_shot = fire(canvas, rows // 2, columns // 2)
     used_positions = set()
-    spaceship_first_frame = get_frame('animation/rocket_frame_1.txt')
-    spaceship_second_frame = get_frame('animation/rocket_frame_2.txt')
+    spaceship_first_frame = get_frame('animations/rocket_frame_1.txt')
+    spaceship_second_frame = get_frame('animations/rocket_frame_2.txt')
     frame_lines = spaceship_first_frame.splitlines()
     frame_height = len(frame_lines)
     frame_width = max(len(line) for line in frame_lines)
-    max_start_row = rows - frame_height - 1
+    max_start_row = rows - frame_height
     start_row = min(rows // 2 + OFFSET_OF_ANIMATION, max_start_row)
     start_col = columns // 2
     spaceship_area = set(
@@ -65,9 +66,9 @@ def draw(canvas):
     )
     used_positions = set(spaceship_area)
     coroutine_of_spaceship = animate_spaceship(
-        canvas, 1, columns // 2, spaceship_first_frame, spaceship_second_frame)
+        canvas, 2, columns // 2, spaceship_first_frame, spaceship_second_frame)
 
-    coroutines = [coroutine_of_spaceship]
+    coroutines = [coroutine_of_spaceship, coroutine_of_shot]
     for _ in range(quantity_of_stars):
         for _ in range(MAX_STARS):
             row = random.randint(1, rows - 2)
