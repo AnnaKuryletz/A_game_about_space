@@ -19,8 +19,8 @@ def get_frame(path):
     return file_content
 
 
-async def blink(canvas, row, column, symbol='*'):
-    for _ in range(random.randint(0, OFFSET_OF_ANIMATION)):
+async def blink(canvas, row, column, symbol='*', offset_tics=0):
+    for _ in range(offset_tics):
         await asyncio.sleep(0)
 
     while True:
@@ -76,7 +76,11 @@ def draw(canvas):
             if (row, column) not in used_positions:
                 used_positions.add((row, column))
                 symbol = random.choice(SIMBOLS_OF_STARS)
-                coroutines.append(blink(canvas, row, column, symbol=symbol))
+                offset_tics = random.randint(0, OFFSET_OF_ANIMATION)
+                coroutines.append(
+                    blink(canvas, row, column, symbol=symbol,
+                          offset_tics=offset_tics)
+                )
                 break
 
     while True:
