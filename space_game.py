@@ -2,16 +2,17 @@ import asyncio
 import curses
 import time
 import random
+import os
 
-from animations.fire_animation import fire
-from animations.space_ship import animate_spaceship
+from animations.space_animations import fire, animate_spaceship, fly_garbage
 
-MAX_STARS = 60
+MAX_STARS = 16
 MIN_STARS = 15
 SYMBOLS_OF_STARS = ['+', '*', '.', ':']
 OFFSET_OF_ANIMATION = 10
 TIC_TIMEOUT = 0.1
 GAME_BORDER_MARGIN = 1  # отступ от границы из-за рамки border
+COROUTINES = []
 
 
 def get_frame(path):
@@ -20,24 +21,40 @@ def get_frame(path):
     return file_content
 
 
+async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
+    while True:
+        for _ in range(random.randint(10, 30)):
+            await asyncio.sleep(0)
+        garbage_filename = random.choice(garbage_filenames)
+        garbage_frame = get_frame(f'animations/garbage/{garbage_filename}')
+        COROUTINES.append(fly_garbage(canvas, column=random.randint(
+            2, columns - 2), garbage_frame=garbage_frame))
+
+
 async def blink(canvas, row, column, symbol='*', offset_tics=0):
     for _ in range(offset_tics):
         await asyncio.sleep(0)
 
+    max_row, max_col = canvas.getmaxyx()
+
     while True:
-        canvas.addstr(row, column, symbol, curses.A_DIM)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol, curses.A_DIM)
         for _ in range(20):
             await asyncio.sleep(0)
 
-        canvas.addstr(row, column, symbol)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol)
         for _ in range(3):
             await asyncio.sleep(0)
 
-        canvas.addstr(row, column, symbol, curses.A_BOLD)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol, curses.A_BOLD)
         for _ in range(5):
             await asyncio.sleep(0)
 
-        canvas.addstr(row, column, symbol)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol)
         for _ in range(3):
             await asyncio.sleep(0)
 
@@ -52,7 +69,6 @@ def draw(canvas):
     center_row = rows // 2
     center_col = columns // 2
 
-    coroutine_of_shot = fire(canvas, center_row, center_col)
     used_positions = set()
     spaceship_first_frame = get_frame('animations/rocket_frame_1.txt')
     spaceship_second_frame = get_frame('animations/rocket_frame_2.txt')
@@ -68,10 +84,14 @@ def draw(canvas):
         for dx in range(frame_width)
     )
     used_positions = set(spaceship_area)
-    coroutine_of_spaceship = animate_spaceship(
-        canvas, start_row, start_col, spaceship_first_frame, spaceship_second_frame)
+    COROUTINES.append(animate_spaceship(canvas, 0, columns // 2, spaceship_first_frame,
+                                        spaceship_second_frame))
 
-    coroutines = [coroutine_of_spaceship, coroutine_of_shot]
+    COROUTINES.append(fire(canvas, center_row, center_col))
+    garbage_filenames = os.listdir('animations/garbage')
+    COROUTINES.append(fill_orbit_with_garbage(
+        canvas, garbage_filenames, columns))
+
     for _ in range(quantity_of_stars):
         for _ in range(MAX_STARS):
             row = random.randint(GAME_BORDER_MARGIN, rows - GAME_BORDER_MARGIN)
@@ -81,23 +101,20 @@ def draw(canvas):
                 used_positions.add((row, column))
                 symbol = random.choice(SYMBOLS_OF_STARS)
                 offset_tics = random.randint(0, OFFSET_OF_ANIMATION)
-                coroutines.append(
-                    blink(canvas, row, column, symbol=symbol,
-                          offset_tics=offset_tics)
-                )
-                break
+                COROUTINES.append(
+                    blink(canvas, row, column, symbol=random.choice(SYMBOLS_OF_STARS), offset_tics=offset_tics))
 
     while True:
-        for coroutine in coroutines.copy():
+        for coroutine in COROUTINES.copy():
             try:
                 coroutine.send(None)
             except StopIteration:
-                coroutines.remove(coroutine)
+                COROUTINES.remove(coroutine)
 
         canvas.refresh()
         time.sleep(TIC_TIMEOUT)
 
-        if len(coroutines) == 0:
+        if len(COROUTINES) == 0:
             break
 
 
