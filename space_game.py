@@ -11,8 +11,13 @@ MIN_STARS = 15
 SYMBOLS_OF_STARS = ['+', '*', '.', ':']
 OFFSET_OF_ANIMATION = 10
 TIC_TIMEOUT = 0.1
-GAME_BORDER_MARGIN = 1  # отступ от границы из-за рамки border
+GAME_BORDER_MARGIN = 1
 COROUTINES = []
+
+
+async def sleep(tics=1):
+    for _ in range(tics):
+        await asyncio.sleep(0)
 
 
 def get_frame(path):
@@ -23,40 +28,28 @@ def get_frame(path):
 
 async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
     while True:
-        for _ in range(random.randint(10, 30)):
-            await asyncio.sleep(0)
+        await sleep(random.randint(10, 30))
         garbage_filename = random.choice(garbage_filenames)
         garbage_frame = get_frame(f'animations/garbage/{garbage_filename}')
         COROUTINES.append(fly_garbage(canvas, column=random.randint(
             2, columns - 2), garbage_frame=garbage_frame))
 
 
-async def blink(canvas, row, column, symbol='*', offset_tics=0):
-    for _ in range(offset_tics):
-        await asyncio.sleep(0)
-
-    max_row, max_col = canvas.getmaxyx()
-
+async def blink(canvas, row, column, offset_tics, symbol='*'):
     while True:
-        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
-            canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(20):
-            await asyncio.sleep(0)
+        await sleep(offset_tics)
 
-        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
-            canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        canvas.addstr(row, column, symbol, curses.A_DIM)
+        await sleep(20)
 
-        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
-            canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(5):
-            await asyncio.sleep(0)
+        canvas.addstr(row, column, symbol)
+        await sleep(3)
 
-        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
-            canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        canvas.addstr(row, column, symbol, curses.A_BOLD)
+        await sleep(5)
+
+        canvas.addstr(row, column, symbol)
+        await sleep(3)
 
 
 def draw(canvas):
