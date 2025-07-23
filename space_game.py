@@ -11,7 +11,7 @@ MIN_STARS = 15
 SYMBOLS_OF_STARS = ['+', '*', '.', ':']
 OFFSET_OF_ANIMATION = 10
 TIC_TIMEOUT = 0.1
-GAME_BORDER_MARGIN = 1
+GAME_BORDER_MARGIN = 1  # отступ от границы из-за рамки border
 COROUTINES = []
 
 
@@ -35,20 +35,26 @@ async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
             2, columns - 2), garbage_frame=garbage_frame))
 
 
-async def blink(canvas, row, column, offset_tics, symbol='*'):
-    while True:
-        await sleep(offset_tics)
+async def blink(canvas, row, column, symbol='*', offset_tics=0):
+    await sleep(offset_tics)
 
-        canvas.addstr(row, column, symbol, curses.A_DIM)
+    max_row, max_col = canvas.getmaxyx()
+
+    while True:
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol, curses.A_DIM)
         await sleep(20)
 
-        canvas.addstr(row, column, symbol)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol)
         await sleep(3)
 
-        canvas.addstr(row, column, symbol, curses.A_BOLD)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol, curses.A_BOLD)
         await sleep(5)
 
-        canvas.addstr(row, column, symbol)
+        if 0 < row < max_row - 1 and 0 < column < max_col - 1:
+            canvas.addstr(row, column, symbol)
         await sleep(3)
 
 
