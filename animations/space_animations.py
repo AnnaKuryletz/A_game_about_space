@@ -1,9 +1,7 @@
 import asyncio
 import curses
-from itertools import cycle
 
-from animations.curses_tools import draw_frame, read_controls, get_frame_size
-from animations.physics import update_speed
+from animations.curses_tools import draw_frame
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -35,7 +33,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
+async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
 
@@ -44,8 +42,12 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
     row = 0
 
-    while row < rows_number:
-        draw_frame(canvas, row, column, garbage_frame)
-        await asyncio.sleep(0)
-        draw_frame(canvas, row, column, garbage_frame, negative=True)
-        row += speed
+    try:
+        while row < rows_number:
+            draw_frame(canvas, row, column, garbage_frame)
+            await asyncio.sleep(0)
+            draw_frame(canvas, row, column, garbage_frame, negative=True)
+            row += speed
+            obstacle.row = row
+    finally:
+        obstacles.remove(obstacle)
