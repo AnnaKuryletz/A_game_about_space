@@ -49,29 +49,3 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         row += speed
-
-
-async def animate_spaceship(canvas, start_row, start_column, *args):
-    """Animate spaceship controlled by user input."""
-    rows_canvas, columns_canvas = canvas.getmaxyx()
-    row_speed = column_speed = 0
-    for frame in cycle(args):
-        rows_spaceship, columns_spaceship = get_frame_size(frame)
-
-        for _ in range(2):
-            rows_direction, columns_direction, _ = read_controls(canvas)
-            row_speed, column_speed = update_speed(
-                row_speed, column_speed, rows_direction, columns_direction)
-
-            start_row += row_speed
-            start_column += column_speed
-
-            rows_direction_validated = min(
-                max(start_row, 1), rows_canvas - rows_spaceship - 1)
-            columns_spaceship_validated = min(
-                max(start_column, 1), columns_canvas - columns_spaceship - 1)
-
-            start_row, start_column = rows_direction_validated, columns_spaceship_validated
-            draw_frame(canvas, start_row, start_column, frame)
-            await asyncio.sleep(0)
-            draw_frame(canvas, start_row, start_column, frame, negative=True)
