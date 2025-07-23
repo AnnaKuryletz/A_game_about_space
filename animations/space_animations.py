@@ -5,7 +5,7 @@ import curses
 from animations.curses_tools import draw_frame
 
 
-async def fire(canvas, start_row, start_column, obstacles, rows_speed=-0.3, columns_speed=0):
+async def fire(canvas, start_row, start_column, obstacles, obstacles_in_last_collisions, rows_speed=-0.3, columns_speed=0):
     """Display animation of gun shot, direction and speed can be specified."""
     row, column = start_row, start_column
 
@@ -34,10 +34,11 @@ async def fire(canvas, start_row, start_column, obstacles, rows_speed=-0.3, colu
         column += columns_speed
         for obstacle in obstacles:
             if obstacle.has_collision(row, column):
+                obstacles_in_last_collisions.append(obstacle)
                 return None
 
 
-async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, speed=0.5):
+async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, obstacles_in_last_collisions, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
 
@@ -53,5 +54,10 @@ async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, speed=
             draw_frame(canvas, row, column, garbage_frame, negative=True)
             row += speed
             obstacle.row = row
+            for obstacle_in_last_collisions in obstacles_in_last_collisions:
+                if obstacle_in_last_collisions.row == row:
+                    obstacles_in_last_collisions.remove(
+                        obstacle_in_last_collisions)
+                    return None
     finally:
         obstacles.remove(obstacle)

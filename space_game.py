@@ -15,14 +15,22 @@ MIN_STARS = 15
 SYMBOLS_OF_STARS = ['+', '*', '.', ':']
 OFFSET_OF_ANIMATION = 10
 TIC_TIMEOUT = 0.1
-GAME_BORDER_MARGIN = 1  # отступ от границы из-за рамки border
+GAME_BORDER_MARGIN = 1
+
 coroutines = []
 obstacles = []
+obstacles_in_last_collisions = []
 
 
 async def sleep(tics=1):
     for _ in range(tics):
         await asyncio.sleep(0)
+
+
+def get_frame(path):
+    with open(path, "r") as file:
+        file_content = file.read()
+    return file_content
 
 
 async def run_spaceship(canvas, start_row, start_column, *frames):
@@ -53,17 +61,11 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
                 gun_row = start_row
                 gun_column = start_column + columns_spaceship // 2
                 coroutines.append(
-                    fire(canvas, start_row, start_column + 2, obstacles))
+                    fire(canvas, start_row, start_column + 2, obstacles, obstacles_in_last_collisions))
 
             draw_frame(canvas, start_row, start_column, frame)
             await asyncio.sleep(0)
             draw_frame(canvas, start_row, start_column, frame, negative=True)
-
-
-def get_frame(path):
-    with open(path, "r") as file:
-        file_content = file.read()
-    return file_content
 
 
 async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
@@ -79,7 +81,7 @@ async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
         obstacles.append(obstacle)
 
         coroutines.append(
-            fly_garbage(canvas, column=column, garbage_frame=garbage_frame, obstacle=obstacle, obstacles=obstacles))
+            fly_garbage(canvas, column=column, garbage_frame=garbage_frame, obstacle=obstacle, obstacles=obstacles, obstacles_in_last_collisions=obstacles_in_last_collisions))
         coroutines.append(show_obstacles(canvas, obstacles))
 
 
@@ -134,7 +136,6 @@ def draw(canvas):
     coroutines.append(run_spaceship(canvas, 0, columns // 2, spaceship_first_frame,
                                     spaceship_second_frame))
 
-    coroutines.append(fire(canvas, center_row, center_col, obstacles))
     garbage_filenames = os.listdir('animations/garbage')
     coroutines.append(fill_orbit_with_garbage(
         canvas, garbage_filenames, columns))
