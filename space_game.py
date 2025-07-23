@@ -38,27 +38,23 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
             rows_direction, columns_direction, space_pressed = read_controls(
                 canvas)
 
-            # управление скоростью
             row_speed, column_speed = update_speed(
                 row_speed, column_speed, rows_direction, columns_direction)
 
-            # новая позиция
             start_row += row_speed
             start_column += column_speed
 
-            # проверка границ
             start_row = min(max(start_row, 1),
                             rows_canvas - rows_spaceship - 1)
             start_column = min(max(start_column, 1),
                                columns_canvas - columns_spaceship - 1)
 
-            # выстрел
             if space_pressed:
                 gun_row = start_row
                 gun_column = start_column + columns_spaceship // 2
-                coroutines.append(fire(canvas, gun_row, gun_column))
+                coroutines.append(
+                    fire(canvas, start_row, start_column + 2, obstacles))
 
-            # отрисовка
             draw_frame(canvas, start_row, start_column, frame)
             await asyncio.sleep(0)
             draw_frame(canvas, start_row, start_column, frame, negative=True)
@@ -138,7 +134,7 @@ def draw(canvas):
     coroutines.append(run_spaceship(canvas, 0, columns // 2, spaceship_first_frame,
                                     spaceship_second_frame))
 
-    coroutines.append(fire(canvas, center_row, center_col))
+    coroutines.append(fire(canvas, center_row, center_col, obstacles))
     garbage_filenames = os.listdir('animations/garbage')
     coroutines.append(fill_orbit_with_garbage(
         canvas, garbage_filenames, columns))
