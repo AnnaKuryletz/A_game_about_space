@@ -1,3 +1,4 @@
+from animations.curses_tools import draw_frame, get_frame_size
 import asyncio
 import curses
 
@@ -40,8 +41,10 @@ async def fire(canvas, start_row, start_column, obstacles, obstacles_in_last_col
 
 
 async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, obstacles_in_last_collisions, speed=0.5):
-    """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
+    """Animate garbage, flying from top to bottom. Column position stays constant."""
     rows_number, columns_number = canvas.getmaxyx()
+    frame_height, _ = get_frame_size(garbage_frame)
+    max_row_for_garbage = rows_number - 4 - frame_height
 
     column = max(column, 0)
     column = min(column, columns_number - 1)
@@ -49,17 +52,20 @@ async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, obstac
     row = 0
 
     try:
-        while row < rows_number:
-            draw_frame(canvas, row, column, garbage_frame)
+        while row < max_row_for_garbage:
+            draw_frame(canvas, int(row), column, garbage_frame)
             await asyncio.sleep(0)
-            draw_frame(canvas, row, column, garbage_frame, negative=True)
+            draw_frame(canvas, int(row), column, garbage_frame, negative=True)
+
             row += speed
             obstacle.row = row
+
             for obstacle_in_last_collisions in obstacles_in_last_collisions:
-                if obstacle_in_last_collisions.row == row:
-                    await explode(canvas, obstacle_in_last_collisions.row, obstacle_in_last_collisions.column)
+                if obstacle_in_last_collisions.row == obstacle.row:
+                    await explode(canvas, obstacle.row, obstacle.column)
                     obstacles_in_last_collisions.remove(
                         obstacle_in_last_collisions)
                     return None
     finally:
-        obstacles.remove(obstacle)
+        if obstacle in obstacles:
+            obstacles.remove(obstacle)

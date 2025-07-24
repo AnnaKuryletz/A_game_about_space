@@ -12,6 +12,8 @@ from animations.physics import update_speed
 from animations.curses_tools import get_frame_size, draw_frame, read_controls
 from animations.obstacles import Obstacle, show_obstacles
 from animations.game_over import show_gameover
+from animations.script import get_garbage_delay_tics, PHRASES
+
 
 MAX_STARS = 16
 MIN_STARS = 15
@@ -19,10 +21,24 @@ SYMBOLS_OF_STARS = ['+', '*', '.', ':']
 OFFSET_OF_ANIMATION = 10
 TIC_TIMEOUT = 0.1
 GAME_BORDER_MARGIN = 1
+CHANGE_YEAR_AFTER = 10
+SHIFT_YEAR_STEP = 10
 
 coroutines = []
 obstacles = []
 obstacles_in_last_collisions = []
+year = 1957
+
+
+async def restore_frame(canvas):
+    while True:
+        canvas.border('|', '|')
+        await sleep(1)
+
+
+async def timer(tiks):
+    await sleep(tiks)
+    return SHIFT_YEAR_STEP
 
 
 async def sleep(tics=1):
@@ -36,7 +52,7 @@ def get_frame(path):
     return file_content
 
 
-async def run_spaceship(canvas, start_row, start_column, *frames):
+async def run_spaceship(canvas, start_row, start_column, sub_window, *frames):
     """Animate spaceship, read input, fire when space is pressed."""
     rows_canvas, columns_canvas = canvas.getmaxyx()
     row_speed = column_speed = 0
@@ -46,7 +62,10 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
         rows_spaceship, columns_spaceship = get_frame_size(frame)
 
         for _ in range(2):
-            rows_direction, columns_direction, space_pressed = read_controls(
+            sub_window.refresh()
+            sub_window.addstr(
+                1, 2, f'year - {year} ---- {PHRASES.get(year) or ''}')
+            rows_direction, columns_direction, fire_on = read_controls(
                 canvas)
 
             row_speed, column_speed = update_speed(
@@ -56,7 +75,7 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
             start_column += column_speed
 
             start_row = min(max(start_row, 1),
-                            rows_canvas - rows_spaceship - 1)
+                            rows_canvas - 2 - rows_spaceship - 1)
             start_column = min(max(start_column, 1),
                                columns_canvas - columns_spaceship - 1)
 
@@ -66,11 +85,9 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
                         canvas, rows_canvas, columns_canvas))
                     return
 
-            if space_pressed:
-                gun_row = start_row
-                gun_column = start_column + columns_spaceship // 2
+            if fire_on and year >= 2000:
                 coroutines.append(
-                    fire(canvas, start_row, gun_column, obstacles, obstacles_in_last_collisions))
+                    fire(canvas, start_row, start_column + 2, obstacles, obstacles_in_last_collisions))
 
             draw_frame(canvas, start_row, start_column, frame)
             await asyncio.sleep(0)
@@ -78,8 +95,13 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
 
 
 async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
+    global year
     while True:
-        await sleep(random.randint(10, 30))
+        time = get_garbage_delay_tics(year)
+        if time is None:
+            year = year + await timer(CHANGE_YEAR_AFTER)
+            continue
+        await sleep(time)
         garbage_filename = random.choice(garbage_filenames)
         garbage_frame = get_frame(f'animations/garbage/{garbage_filename}')
         column = random.randint(2, columns - 2)
@@ -90,8 +112,9 @@ async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
         obstacles.append(obstacle)
 
         coroutines.append(
-            fly_garbage(canvas, column=column, garbage_frame=garbage_frame, obstacle=obstacle, obstacles=obstacles, obstacles_in_last_collisions=obstacles_in_last_collisions))
-        # coroutines.append(show_obstacles(canvas, obstacles))
+            fly_garbage(canvas, column=column, garbage_frame=garbage_frame, obstacle=obstacle, obstacles=obstacles,
+                        obstacles_in_last_collisions=obstacles_in_last_collisions))
+        year = year + await timer(CHANGE_YEAR_AFTER)
 
 
 async def blink(canvas, row, column, symbol='*', offset_tics=0):
@@ -124,6 +147,13 @@ def draw(canvas):
 
     rows, columns = canvas.getmaxyx()
     quantity_of_stars = random.randint(MIN_STARS, MAX_STARS)
+
+    sub_window = canvas.derwin(3, columns, rows - 3, 0)
+    sub_window.border('|', '|')
+
+    coroutines.append(restore_frame(canvas))
+    coroutines.append(restore_frame(sub_window))
+
     center_row = rows // 2
     center_col = columns // 2
 
@@ -142,8 +172,8 @@ def draw(canvas):
         for dx in range(frame_width)
     )
     used_positions = set(spaceship_area)
-    coroutines.append(run_spaceship(canvas, 0, columns // 2, spaceship_first_frame,
-                                    spaceship_second_frame))
+    coroutines.append(run_spaceship(canvas, 0, columns // 2, sub_window,
+                                    spaceship_first_frame, spaceship_second_frame))
 
     garbage_filenames = os.listdir('animations/garbage')
     coroutines.append(fill_orbit_with_garbage(
@@ -151,7 +181,8 @@ def draw(canvas):
 
     for _ in range(quantity_of_stars):
         for _ in range(MAX_STARS):
-            row = random.randint(GAME_BORDER_MARGIN, rows - GAME_BORDER_MARGIN)
+            row = random.randint(GAME_BORDER_MARGIN,
+                                 rows - GAME_BORDER_MARGIN - 4)
             column = random.randint(
                 GAME_BORDER_MARGIN, columns - GAME_BORDER_MARGIN)
             if (row, column) not in used_positions:
