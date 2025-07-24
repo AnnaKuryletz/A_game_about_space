@@ -1,9 +1,7 @@
-from animations.curses_tools import draw_frame, get_frame_size
 import asyncio
 import curses
 
-
-from animations.curses_tools import draw_frame
+from animations.curses_tools import draw_frame, get_frame_size
 from animations.explosion import explode
 
 

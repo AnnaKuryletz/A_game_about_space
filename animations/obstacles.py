@@ -1,4 +1,5 @@
 import asyncio
+
 from animations.curses_tools import draw_frame
 
 

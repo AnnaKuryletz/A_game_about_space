@@ -1,18 +1,16 @@
 import asyncio
 import curses
-import time
-import random
-from itertools import cycle
 import os
+import random
+import time
+from itertools import cycle
 
-from operator import ifloordiv
-
-from animations.space_animations import fire, fly_garbage
-from animations.physics import update_speed
-from animations.curses_tools import get_frame_size, draw_frame, read_controls
-from animations.obstacles import Obstacle, show_obstacles
+from animations.curses_tools import draw_frame, get_frame_size, read_controls
 from animations.game_over import show_gameover
-from animations.script import get_garbage_delay_tics, PHRASES
+from animations.obstacles import Obstacle
+from animations.physics import update_speed
+from animations.script import PHRASES, get_garbage_delay_tics
+from animations.space_animations import fire, fly_garbage
 
 
 MAX_STARS = 16
@@ -64,9 +62,8 @@ async def run_spaceship(canvas, start_row, start_column, sub_window, *frames):
         for _ in range(2):
             sub_window.refresh()
             sub_window.addstr(
-                1, 2, f'year - {year} ---- {PHRASES.get(year) or ''}')
-            rows_direction, columns_direction, fire_on = read_controls(
-                canvas)
+                1, 2, f'year - {year} ---- {PHRASES.get(year) or ""}')
+            rows_direction, columns_direction, fire_on = read_controls(canvas)
 
             row_speed, column_speed = update_speed(
                 row_speed, column_speed, rows_direction, columns_direction)
@@ -74,8 +71,8 @@ async def run_spaceship(canvas, start_row, start_column, sub_window, *frames):
             start_row += row_speed
             start_column += column_speed
 
-            start_row = min(max(start_row, 1),
-                            rows_canvas - 2 - rows_spaceship - 1)
+            start_row = min(max(start_row, 1), rows_canvas -
+                            2 - rows_spaceship - 1)
             start_column = min(max(start_column, 1),
                                columns_canvas - columns_spaceship - 1)
 
@@ -85,13 +82,22 @@ async def run_spaceship(canvas, start_row, start_column, sub_window, *frames):
                         canvas, rows_canvas, columns_canvas))
                     return
 
-            if fire_on and year >= 2000:
+            if fire_on:
                 coroutines.append(
                     fire(canvas, start_row, start_column + 2, obstacles, obstacles_in_last_collisions))
 
             draw_frame(canvas, start_row, start_column, frame)
+
+            if year >= 2020:
+                draw_frame(canvas, start_row - 1, start_column + 2, "^")
+
             await asyncio.sleep(0)
+
             draw_frame(canvas, start_row, start_column, frame, negative=True)
+
+            if year >= 2020:
+                draw_frame(canvas, start_row - 1,
+                           start_column + 2, "^", negative=True)
 
 
 async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
