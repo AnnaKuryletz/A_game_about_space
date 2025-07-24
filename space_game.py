@@ -5,10 +5,13 @@ import random
 from itertools import cycle
 import os
 
+from operator import ifloordiv
+
 from animations.space_animations import fire, fly_garbage
 from animations.physics import update_speed
 from animations.curses_tools import get_frame_size, draw_frame, read_controls
 from animations.obstacles import Obstacle, show_obstacles
+from animations.game_over import show_gameover
 
 MAX_STARS = 16
 MIN_STARS = 15
@@ -57,11 +60,17 @@ async def run_spaceship(canvas, start_row, start_column, *frames):
             start_column = min(max(start_column, 1),
                                columns_canvas - columns_spaceship - 1)
 
+            for obstacle in obstacles:
+                if obstacle.has_collision(start_row, start_column, rows_spaceship, columns_spaceship):
+                    coroutines.append(show_gameover(
+                        canvas, rows_canvas, columns_canvas))
+                    return
+
             if space_pressed:
                 gun_row = start_row
                 gun_column = start_column + columns_spaceship // 2
                 coroutines.append(
-                    fire(canvas, start_row, start_column + 2, obstacles, obstacles_in_last_collisions))
+                    fire(canvas, start_row, gun_column, obstacles, obstacles_in_last_collisions))
 
             draw_frame(canvas, start_row, start_column, frame)
             await asyncio.sleep(0)
@@ -82,7 +91,7 @@ async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
 
         coroutines.append(
             fly_garbage(canvas, column=column, garbage_frame=garbage_frame, obstacle=obstacle, obstacles=obstacles, obstacles_in_last_collisions=obstacles_in_last_collisions))
-        coroutines.append(show_obstacles(canvas, obstacles))
+        # coroutines.append(show_obstacles(canvas, obstacles))
 
 
 async def blink(canvas, row, column, symbol='*', offset_tics=0):
