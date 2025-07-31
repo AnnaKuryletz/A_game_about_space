@@ -183,18 +183,15 @@ def draw(canvas):
         canvas, garbage_filenames, columns))
 
     for _ in range(quantity_of_stars):
-        for _ in range(MAX_STARS):
-            row = random.randint(GAME_BORDER_MARGIN,
-                                 rows - GAME_BORDER_MARGIN - 4)
-            column = random.randint(
-                GAME_BORDER_MARGIN, columns - GAME_BORDER_MARGIN)
-            if (row, column) not in used_positions:
-                used_positions.add((row, column))
-                symbol = random.choice(SYMBOLS_OF_STARS)
-                offset_tics = random.randint(0, OFFSET_OF_ANIMATION)
-                coroutines.append(
-                    blink(canvas, row, column, symbol=random.choice(SYMBOLS_OF_STARS), offset_tics=offset_tics))
-
+        row = random.randint(GAME_BORDER_MARGIN, rows - GAME_BORDER_MARGIN - 4)
+        column = random.randint(
+            GAME_BORDER_MARGIN, columns - GAME_BORDER_MARGIN)
+        if (row, column) not in used_positions:
+            used_positions.add((row, column))
+            symbol = random.choice(SYMBOLS_OF_STARS)
+            offset_tics = random.randint(0, OFFSET_OF_ANIMATION)
+            coroutines.append(
+                blink(canvas, row, column, symbol=symbol, offset_tics=offset_tics))
     while True:
         for coroutine in coroutines.copy():
             try:
