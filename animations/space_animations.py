@@ -1,6 +1,7 @@
 import asyncio
 import curses
 
+from animations.obstacles import Obstacle
 from animations.curses_tools import draw_frame, get_frame_size
 from animations.explosion import explode
 
@@ -38,16 +39,18 @@ async def fire(canvas, start_row, start_column, obstacles, obstacles_in_last_col
                 return None
 
 
-async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, obstacles_in_last_collisions, speed=0.5):
-    """Animate garbage, flying from top to bottom. Column position stays constant."""
+async def fly_garbage(canvas, column, garbage_frame, obstacles, obstacles_in_last_collisions, speed=0.5):
+    """Animate garbage falling down. Handles obstacle creation and removal."""
     rows_number, columns_number = canvas.getmaxyx()
-    frame_height, _ = get_frame_size(garbage_frame)
-    max_row_for_garbage = rows_number - 4 - frame_height
+    frame_height, frame_width = get_frame_size(garbage_frame)
+    max_row_for_garbage = rows_number - 4 - frame_height  # Не залазим на табличку
 
     column = max(column, 0)
-    column = min(column, columns_number - 1)
+    column = min(column, columns_number - frame_width)
 
     row = 0
+    obstacle = Obstacle(row, column, frame_height, frame_width)
+    obstacles.append(obstacle)
 
     try:
         while row < max_row_for_garbage:
@@ -56,14 +59,12 @@ async def fly_garbage(canvas, column, garbage_frame, obstacle, obstacles, obstac
             draw_frame(canvas, int(row), column, garbage_frame, negative=True)
 
             row += speed
-            obstacle.row = row
+            obstacle.row = row  # обновляем позицию препятствия
 
-            for obstacle_in_last_collisions in obstacles_in_last_collisions:
-                if obstacle_in_last_collisions.row == obstacle.row:
-                    await explode(canvas, obstacle.row, obstacle.column)
-                    obstacles_in_last_collisions.remove(
-                        obstacle_in_last_collisions)
-                    return None
+            if obstacle in obstacles_in_last_collisions:
+                obstacles_in_last_collisions.remove(obstacle)
+                await explode(canvas, int(row), column)
+                return
     finally:
         if obstacle in obstacles:
             obstacles.remove(obstacle)

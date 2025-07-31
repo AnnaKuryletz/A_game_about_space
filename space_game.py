@@ -7,7 +7,6 @@ from itertools import cycle
 
 from animations.curses_tools import draw_frame, get_frame_size, read_controls
 from animations.game_over import show_gameover
-from animations.obstacles import Obstacle
 from animations.physics import update_speed
 from animations.script import PHRASES, get_garbage_delay_tics
 from animations.space_animations import fire, fly_garbage
@@ -114,11 +113,9 @@ async def fill_orbit_with_garbage(canvas, garbage_filenames, columns):
 
         frame_row, frame_column = get_frame_size(garbage_frame)
 
-        obstacle = Obstacle(0, column, frame_row, frame_column)
-        obstacles.append(obstacle)
-
         coroutines.append(
-            fly_garbage(canvas, column=column, garbage_frame=garbage_frame, obstacle=obstacle, obstacles=obstacles,
+            fly_garbage(canvas, column=column, garbage_frame=garbage_frame,
+                        obstacles=obstacles,
                         obstacles_in_last_collisions=obstacles_in_last_collisions))
         year = year + await timer(CHANGE_YEAR_AFTER)
 
